@@ -1,6 +1,6 @@
 # Simulate GERP Input with SLiM
 
-This is small test to simulate data for the `msa_pipeline` with `SLiM3`.
+This is a small test to simulate data for the `msa_pipeline` with `SLiM3`.
 
 The basic steps are collected in `create_dummy.sh`, a config file for the `msa_pipeline` is provided in `config_dummy.yaml`:
 
