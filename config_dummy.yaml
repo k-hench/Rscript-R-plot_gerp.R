@@ -1,0 +1,63 @@
+##############################################
+# Example config for msa_pipeline Snakefile  #
+##############################################
+
+########################
+# REQUIRED PARAMETERS  #
+########################
+
+# Reference species name
+# The name should match the name of a fasta file in "msa_pipeline/data" but NOT contain the .fa suffix
+refName: ref_sim_f
+
+# Query species to be aligned to reference
+# The species names should each match a fasta file in "msa_pipeline/data" but NOT contain the .fa suffix
+species:
+  - final_hap_1_f
+  - final_hap_2_f
+  - final_hap_3_f
+  - final_hap_4_f
+  - final_hap_5_f
+  - final_hap_6_f
+
+######################################
+# OPTIONAL PARAMETERS  FOR ALIGNMENT #
+######################################
+
+# Split input fasta files into N chunks for improved parallel processing
+# Chunks are aligned in parallel if sufficient threads are available
+# Setting N to be greater than the minimum chromosome/scaffold number may lead to errors
+splitFastaN: 1
+
+# Set alignment tool: last|minimap2|gsalign
+aligner: last
+
+# Change default alignment parameters
+lastParams: "-m 10 -j 3 -u 1 -p HOXD70"
+minimap2Params: "-a -cx asm20"
+gsalignParams: "-sen -no_vcf"
+
+# Without last-split, the alignments are many-many after lastal, and many-one afer
+# chaining and netting.  
+lastSplit:
+# For one-to-one last alignments, comment the above and uncomment the lastSplit line below
+#lastSplit: " | last-split | maf-swap | last-split | maf-swap "
+
+# Roast multiple alignment parameters
+roastParams: "+ X=2 E="
+
+# Newick format species tree for roast
+# It must contain the reference and all other species in the alignment
+# If left empty, tree will be calculated from genome sequences with mashtree 
+speciesTree: "((ref_sim_f:0.000001,(final_hap_3_f:0.000097,(final_hap_4_f:0.000001,(final_hap_6_f:0.000096,final_hap_1_f:0.000096):0.000001):0.000047):0.031756):0.030992,final_hap_5_f:0.000145,final_hap_2_f:0.000095);"
+
+#################################################
+# OPTIONAL PARAMETERS FOR CONSERVATION ANALYSIS #
+#################################################
+
+# When callling conservation set the max number of sites to use to calculate the neutral model
+# Higher numbers may slow down the analysis without providing a better model
+maxNeutralSites: 10000000
+
+# A GFF file with CDS features must be provided in the /data dir to use a neutral model based on 4-fold degenerate sites
+refGFF:

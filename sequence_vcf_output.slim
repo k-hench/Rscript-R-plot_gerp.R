@@ -1,0 +1,61 @@
+initialize() {
+	initializeSLiMOptions( nucleotideBased = T );
+	length = initializeAncestralNucleotides( "~/Desktop/slim_sim_fa_and_vcf/data/ref_dummy.fa" );
+	defineConstant( "L", length );
+
+   // mutation types
+	initializeMutationTypeNuc( "m1", 0.5, "f", 1.1 );
+	initializeMutationTypeNuc( "m2", 0.1, "e", -0.1 );
+	initializeMutationTypeNuc( "m3", 0.2, "g", -0.03, 0.2 );
+	
+	// define genomic elements
+	initializeGenomicElementType( "g1", m1, 1.0, mmJukesCantor( 5e-6 / 3 ) );
+	initializeGenomicElementType( "g2", c(m2, m3), c(1, 10), mmJukesCantor( 5e-6 / 3 ) ); // exons
+	initializeGenomicElementType( "g3", c(m1, m2), c(90, 10), mmJukesCantor( 5e-6 / 3 ) ); // introns	
+	
+	// compose genome
+   initializeGenomicElement( g1, 0, asInteger(round(1/5 * L)) - 1 );
+	initializeGenomicElement( g2, asInteger(round(1/5 * L)) , asInteger(round(2/5 * L)) - 1);
+	initializeGenomicElement( g3, asInteger(round(2/5 * L)) , asInteger(round(3/5 * L)) - 1);
+	initializeGenomicElement( g2, asInteger(round(3/5 * L)) , asInteger(round(4/5 * L)) - 1);	
+   initializeGenomicElement( g1, asInteger(round(4/5 * L)), L-1 );	
+
+	initializeRecombinationRate( 1e-8 );
+}
+
+1 late() {
+   sim.addSubpop( "p1", 10 );
+   // p1.genomes.readFromVCF( "sim.vcf", m1 );
+   p1.setSubpopulationSize( 1000 );
+}
+
+1000 late() {
+	catn( "// " + sim.substitutions.size() + "substitutions." );
+   // catn( paste( sim.substitutions.nucleotide ) );
+	// export final state to vcf file
+   export_inds = p1.sampleIndividuals(3).genomes;
+   export_inds.outputVCF( "results/final_sim.vcf" );  
+   
+   for(k in 1:export_inds.length()) {
+     out_seq = export_inds[k-1].nucleotides();
+     writeFile( "results/final_hap_" + k + ".fa", c(">hap_" + k, out_seq));
+     }
+
+      
+   // export substitution summary as tsv
+   subs = sim.substitutions;
+   lines = sapply( subs,
+                   "applyValue.position + '\t' + applyValue.nucleotide;" );
+   lines = c( "position\tnucleotide", lines );
+   writeFile( "results/subs.tsv", lines );
+   
+   // export final reference genome (with substitutions)
+   seq = sim.chromosome.ancestralNucleotides();
+   writeFile( "results/ref_sim.fa", c(">final_reference_seq", seq));
+   writeFile( "results/ref_sim.bed",
+    c("final_reference_seq" + "\t" + 1  + "\t" + asInteger(round(1/5 * L)) + "\t" + "non-coding",
+      "final_reference_seq" + "\t" + asInteger(round(1/5 * L) + 1)  + "\t" + asInteger(round(2/5 * L)) + "\t" + "exon",
+      "final_reference_seq" + "\t" + asInteger(round(2/5 * L) + 1)  + "\t" + asInteger(round(3/5 * L))  + "\t" + "intron",
+      "final_reference_seq" + "\t" + asInteger(round(3/5 * L) + 1)  + "\t" + asInteger(round(4/5 * L))  + "\t" + "exon",
+      "final_reference_seq" + "\t" + asInteger(round(4/5 * L) + 1)  + "\t" + L + "\t" + "non-coding"));
+}
